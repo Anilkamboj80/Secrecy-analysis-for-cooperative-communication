@@ -1,0 +1,84 @@
+clc;
+clear all;
+
+Pt_dBm=30;  %Global Transit power in dBm  
+Pt=(10^(Pt_dBm/10))/1000  % Total Transmit power in Watt
+    
+    % we consider noise variance is (-30) dBm at all nodes
+        No=(10^(-30/10))/1000;
+        sig_sq=No;   % Noise Variance S->R Link
+        
+c=3.5;
+R_th=2;
+threshold= (2.^(R_th))-1 
+
+d_BS=7;
+d_S1 = 25;
+d_12 = 25;
+d_2D = 25; 
+d_E = 35;
+d_EH=0:1:14;
+d_1E=((d_E.^2)+(d_EH.^2)).^(0.5);
+d_2E=((d_E.^2)+(d_12-d_EH).^2).^(0.5);
+d_SE=((d_E.^2)+(d_S1+d_12).^2).^(0.5);
+
+%P=(n.*lemda.*Pb.*(d_bs.^-3.5))./2;
+alpha_S1=(d_S1.^-3.5)./(sig_sq)
+alpha_2D=(d_2D.^-3.5)./(sig_sq)
+alpha_12=(d_12.^-3.5)./(sig_sq)
+alpha_1E=(d_1E.^-3.5)./(sig_sq)
+alpha_2E=(d_2E.^-3.5)./(sig_sq)
+alpha_SE=(d_SE.^-3.5)./(sig_sq)
+
+%tau=(alpha_S1.*alpha_2D)+alpha_12.*(alpha_S1+alpha_2D);
+P_S=Pt./6;
+P_1=Pt./6;
+P_1J=Pt./6;
+P_2=Pt./6;
+P_2J=Pt./6;
+P_SJ=Pt./6;
+
+Rd1=(1+P_2.*alpha_2D);
+SNR_S1=(P_S).*alpha_S1;
+SNR_12= (P_1).*alpha_12;
+SNR_2D=(P_2).*alpha_2D; 
+SNR_1e= (P_1.*alpha_1E)./(1+(P_SJ.*alpha_SE));
+SNR_2e= (P_2.*alpha_2E)./(1+(P_1J.*alpha_1E));
+SNR_se= (P_S.*alpha_SE)./(1+(P_2J.*alpha_2E));
+Re_1= 1+ SNR_1e + SNR_2e+ SNR_se;
+sec_rate_DF=(log2(Rd1./Re_1))./2
+
+
+%Code for FDR FOR AF
+G=1./(Pt.*(d_BS.^-3.5)+sig_sq).^(0.5);
+Rd1b=1+((G.^2).*P_2.*alpha_2D);
+SNR_seb= (P_S.*alpha_SE)./(1+(P_2J.*alpha_2E));
+SNR_1eb= G.*(P_1.*alpha_1E)./(1+(P_SJ.*alpha_SE));
+SNR_12b= ((G.^2).*(P_2.*alpha_2E))./(1+(P_1J.*alpha_1E));
+Re_1b= 1+ SNR_1eb + SNR_12b+SNR_seb;
+sec_rate_AF=(log2(Rd1b./Re_1b))./2
+
+
+%Condition for Hybrid Relaying
+if(SNR_S1>threshold)
+    sec_rate_1=sec_rate_DF;
+else
+    sec_rate_1=sec_rate_AF;
+end
+    
+    if(SNR_12>threshold)
+        sec_rate_2=sec_rate_DF;
+    else
+        sec_rate_2=sec_rate_AF;
+    end
+        
+        overall_sec_rate= sec_rate_1+sec_rate_2
+
+
+hold all;
+plot(d_EH,sec_rate_DF,'r',d_EH,sec_rate_AF,'g',d_EH,overall_sec_rate,'b--');
+xlabel('d_EH (m)','FontSize',11,'FontWeight','bold');
+ylabel('sec-rate (bps/Hz)','FontSize',11,'FontWeight','bold');
+hleg1=legend('DF','AF','HDAF');
+set(hleg1,'Location','northeast');
+grid on;
