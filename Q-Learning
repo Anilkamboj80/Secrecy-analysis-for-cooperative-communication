@@ -11,5 +11,27 @@ function qTable = qTableUpdate(qTable, state, action, reward, nextState)
     qTableMax = max(qTable(nextState,:));    
     
     qTable(state,action) = qTable(state,action) + a * (reward + g* qTableMax - qTable(state,action));
+    
+    
+    
+    function action = qLearningSelectAction(qTable, state)
+
+    x = rand;
+    
+    if x <= 0.6
+        
+           [s,a] = max(qTable(state,:));
+    
+
+        action = a;
+        
+    else
+        action = randi(4);
+    end
+    
+end
+
+
+
 
     
