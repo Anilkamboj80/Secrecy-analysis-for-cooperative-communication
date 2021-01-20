@@ -1,0 +1,110 @@
+function [out1_relay,out4_relay]= relayselection_relay
+seed = 0;
+rand('state',seed);
+randn('state',seed);
+sim_num = 50;
+thita_3db =15; 
+NLoS_prob=0.9;
+an_eta = 0.8;
+rt_eta = 1; 
+antenna_gain_ml = 360*an_eta/thita_3db;
+antenna_gain_sl = 360*(1-an_eta)/(360 - thita_3db);
+antenna_gain_ml_db = 10*log10(antenna_gain_ml); 
+antenna_gain_sl_db = 10*log10(antenna_gain_sl);
+pt=-10; alpha = 2.0 ; 
+bandwidth = 2400;
+noise_db = -90;  
+display(cases)
+display(thita_3db)
+display(an_eta)
+ 
+long_in_meter = 10;
+wide_in_meter = 10;
+ 
+rate= 0;
+maxrate= 8;  
+for rate_no= 1  : maxrate/0.2 +1
+node = 90;
+link_num = 30;
+NLoS_num = floor(link_num*NLoS_prob);
+LoS_num = link_num - NLoS_num; 
+candat_num = node -  2*link_num; 
+sum_throput1(rate_no)  = 0;
+sum_throput2(rate_no) = 0;
+sum_throput3(rate_no) = 0;
+sum_throput4(rate_no) = 0;
+ 
+out1=0;  
+out2=0;  
+out3=0;  
+out4=0;
+ 
+for sim_time = 1:sim_num
+   tic
+    node_loc = [long_in_meter*rand(1,node);wide_in_meter*rand(1,node)];
+    LoSthroput_sum(sim_time) = 0;
+ z1=0;
+    z2=0;
+    z3=0;
+    z4=0;
+if LoS_num>1
+    
+    for LoS_no = 1:LoS_num   
+                LoS_dis(LoS_no) = sqrt((node_loc(1,2*LoS_no)-node_loc(1,2*LoS_no-1))^2 ...
+                + (node_loc(2,2*LoS_no)-node_loc(2,2*LoS_no-1))^2);
+        
+        LoSSNR_db(LoS_no) =  pt + 2*antenna_gain_ml_db - cr_ch_model_pathloss(LoS_dis(LoS_no))
+                - noise_db;  
+                LoSthroput(LoS_no) = rt_eta * bandwidth * 1024 * 1024 * log2( 1+ LoSSNR(LoS_no) );  
+        LoSthroput_sum(sim_time) = LoSthroput_sum(sim_time) + LoSthroput(LoS_no);    
+    end        
+end
+if NLoS_num>1   
+NLoSthroput_1=zeros(NLoS_num,candat_num);
+NLoSthroput_2=zeros(NLoS_num,candat_num);
+SRNLoS_dis=zeros(NLoS_num,candat_num);
+RDNLoS_dis=zeros(NLoS_num,candat_num);
+SDNLoS_dis=zeros(NLoS_num,candat_num);
+    for NLoS_no =1:NLoS_num   
+        for candat_no = 1: candat_num
+            
+                       SRNLoS_dis(NLoS_no,candat_no) = sqrt( (node_loc(1,2*link_num+candat_no)-node_loc(1,2*(LoS_num+NLoS_no)-1))^2 ...
+                + (node_loc(2,2*link_num+candat_no)-node_loc(2,2*(LoS_num+NLoS_no)-1))^2 );
+             RDNLoS_dis(NLoS_no,candat_no) = sqrt( (node_loc(1,2*link_num+candat_no)-node_loc(1,2*(LoS_num+NLoS_no)))^2 ...
+                + (node_loc(2,2*link_num+candat_no)-node_loc(2,2*(LoS_num+NLoS_no)))^2 );  
+            SDNLoS_dis(NLoS_no,candat_no) = sqrt( (node_loc(1,2*(LoS_num+NLoS_no))-node_loc(1,2*(LoS_num+NLoS_no)-1))^2 ...
+                + (node_loc(2,2*(LoS_num+NLoS_no))-node_loc(2,2*(LoS_num+NLoS_no)-1))^2 );
+            
+             SRNLoSSNR_db1(NLoS_no,candat_no) = pt + 2*antenna_gain_ml_db - cr_ch_model_pathloss(SRNLoS_dis(NLoS_no,candat_no)) - noise_db; 
+             SRNLoSSNR_1(NLoS_no,candat_no) = 10* log10( SRNLoSSNR_db1(NLoS_no,candat_no) );
+                          RDNLoSSNR_db1(NLoS_no,candat_no) = pt + 2*antenna_gain_ml_db - cr_ch_model_pathloss(RDNLoS_dis(NLoS_no,candat_no)) - noise_db; 
+             RDNLoSSNR_1(NLoS_no,candat_no)= 10* log10( RDNLoSSNR_db1(NLoS_no,candat_no) );
+                          SDNLoSSNR_db1(NLoS_no,candat_no) = pt + 2*antenna_gain_ml_db - cr_ch_model_pathloss(SDNLoS_dis(NLoS_no,candat_no)) - noise_db; 
+             SDNLoSSNR_1(NLoS_no,candat_no) = 10* log10( SDNLoSSNR_db1(NLoS_no,candat_no) );
+             
+                        SRNLoSSNR_db2(NLoS_no,candat_no) = SRNLoSSNR_db1(NLoS_no,candat_no) ;
+             RDNLoSSNR_db2(NLoS_no,candat_no) = RDNLoSSNR_db1(NLoS_no,candat_no);
+             SDNLoSSNR_db2(NLoS_no,candat_no) = SDNLoSSNR_db1(NLoS_no,candat_no) ;
+             SRNLoSSNR_2(NLoS_no,candat_no) = SRNLoSSNR_1(NLoS_no,candat_no) ;
+             RDNLoSSNR_2(NLoS_no,candat_no) = RDNLoSSNR_1(NLoS_no,candat_no);
+             SDNLoSSNR_2(NLoS_no,candat_no) = SDNLoSSNR_1(NLoS_no,candat_no) ;
+             NLoSthroput_2(NLoS_no,candat_no) = 1/2 * rt_eta * bandwidth * 1024 * 1024 * log2(1+(0.1+(1-0.1)*rand(1))*10^(-4)*SDNLoSSNR_1(NLoS_no,candat_no)+ SRNLoSSNR_1(NLoS_no,candat_no) *RDNLoSSNR_1(NLoS_no,candat_no) /(1+SRNLoSSNR_1(NLoS_no,candat_no)+RDNLoSSNR_1(NLoS_no,candat_no)));
+                          NLoS_factor = randsrc(1,1,[0 1;1-NLoS_prob  NLoS_prob]);
+             if   NLoS_factor==1
+               SRNLoSSNR_1(NLoS_no,candat_no) = 10^(-11) *SRNLoSSNR_1(NLoS_no,candat_no) 
+end
+             NLoS_factor = randsrc(1,1,[0 1;1-NLoS_prob NLoS_prob]);
+             if  NLoS_factor == 1
+               RDNLoSSNR_1(NLoS_no,candat_no) = 10^(-11) * RDNLoSSNR_1(NLoS_no,candat_no) ;
+             end
+                          NLoSthroput_1(NLoS_no,candat_no) = 1/2 * rt_eta * bandwidth * 1024 * 1024 *log2(1+(0.1+(1-0.1)*rand(1))*10^(-4)*SDNLoSSNR_1(NLoS_no,candat_no)+ SRNLoSSNR_1(NLoS_no,candat_no) *RDNLoSSNR_1(NLoS_no,candat_no) /(1+SRNLoSSNR_1(NLoS_no,candat_no)+RDNLoSSNR_1(NLoS_no,candat_no)));
+           end
+    end
+% Apply Q Algorithm %
+
+out1_relay(rate_no)= out1 *100/sim_num;
+out2_15(rate_no)= out2 *100/sim_num;
+out3_15(rate_no)= out3 *100/sim_num;
+out4_relay(rate_no)= out4 *100/sim_num;
+rate= rate+0.2;  
+end
