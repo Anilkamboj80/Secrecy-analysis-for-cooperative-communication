@@ -1,0 +1,53 @@
+function SOP_main(SNR_1,M1,N1,PP,KK,xR,xP,yP,xE,yE,PL,Rat)  
+%
+SOP         = zeros(1,length(SNR_1));
+for aa = 1 : length(SNR_1)
+    SOP(aa) = ham(SNR_1(aa),M1,N1,PP,KK,xR,xP,yP,xE,yE,PL,Rat);
+end
+SOP
+semilogy(SNR_1,SOP,'r-'); grid on;hold on;
+end
+ 
+function out = ham(SNR_1,M1,N1,PP,KK,xR,xP,yP,xE,yE,PL,Rat)
+SS          = 10.^(SNR_1/10);
+C         = xR.^PL;
+SRS         = sqrt(xP.^2+yP.^2).^PL;
+RSE         = sqrt(xE.^2+yE.^2).^PL;
+LRD         = (1 - xR).^PL;
+LRP         = sqrt((xR-xP).^2+yP.^2).^PL;
+LRE         = sqrt((xR-xE).^2+yE.^2).^PL;
+Rho         = 2^(2*Rat);
+OUTPUT        = 0;
+for bb = 1 : KK
+    for jj = 1 : bb
+        for M1 = 0 : M1-jj+1            
+            for N1=1:N1 
+              for aa=1:PP
+                hs0 = (-1)^M1*nchoosek(M1,jj-1)*nchoosek(M1-jj+1,M1);
+                hs1 = (-1)^(N1+1)*nchoosek(N1,N1)*N1*RSE./((M1+jj-1).*LSR.*Rho+N1.*RSE);       
+                hs2 = (-1)^(aa+1)*nchoosek(PP,aa).*aa*SRS./((M1+jj-1)*LSR.*(Rho-1)./SS+aa.*SRS);
+                OUTPUT = OUTPUT + hs0.*hs1.*hs2;
+              end
+            end               
+        end            
+    end
+end
+%
+Out2   = 1;
+for N1n = 1 : N1
+    for aaa = 1 : PP
+        hs3   = (-1)^(N1n+aaa+1)*nchoosek(N1,N1n)*nchoosek(PP,aaa)*aaa*LRP*N1n*LRE;
+        hs4   = 1/(LRD.*(Rho-1)./SS + aaa.*LRP)/(LRD.*Rho + N1n.*LRE);
+        Out2  = Out2 + hs3.*hs4;
+    end
+end
+%
+out = 1 - (1 - 1/KK*OUTPUT)*(1-Out2^KK);
+end
+ 
+ 
+ 
+ 
+ 
+
+
